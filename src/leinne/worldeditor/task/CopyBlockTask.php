@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace leinne\worldeditor\task;
 
 use leinne\worldeditor\WorldEditor;
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
@@ -14,7 +14,8 @@ use pocketmine\utils\TextFormat;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 
-class CopyBlockTask extends Task{
+class CopyBlockTask extends Task
+{
 
     /**
      * 동쪽
@@ -39,15 +40,15 @@ class CopyBlockTask extends Task{
     protected Vector3 $savePos, $maxPos;
     protected Position $realPos;
 
-    public function __construct(Player $player, Vector3 $startPos, Vector3 $endPos, World $world){
+    public function __construct(Player $player, Vector3 $startPos, Vector3 $endPos, World $world)
+    {
         $this->player = $player;
         $this->facing = $player->getHorizontalFacing();
-
         $this->startPos = $startPos;
         $this->endPos = $endPos;
         $this->world = $world;
 
-        switch($this->facing){
+        switch ($this->facing) {
             case Facing::EAST:
                 $this->maxPos = $endPos->subtractVector($startPos);
                 $this->realPos = Position::fromObject($startPos->asVector3(), $world);
@@ -70,12 +71,13 @@ class CopyBlockTask extends Task{
         $this->savePos = new Vector3(0, 0, 0);
     }
 
-    public function eastPos() : bool{
-        if(++$this->realPos->x > $this->endPos->x){
+    public function eastPos(): bool
+    {
+        if (++$this->realPos->x > $this->endPos->x) {
             $this->realPos->x = $this->startPos->x;
-            if(++$this->realPos->z > $this->endPos->z){
+            if (++$this->realPos->z > $this->endPos->z) {
                 $this->realPos->z = $this->startPos->z;
-                if(++$this->realPos->y > $this->endPos->y){
+                if (++$this->realPos->y > $this->endPos->y) {
                     return true;
                 }
             }
@@ -83,12 +85,13 @@ class CopyBlockTask extends Task{
         return false;
     }
 
-    public function southPos() : bool{
-        if(++$this->realPos->z > $this->endPos->z){
+    public function southPos(): bool
+    {
+        if (++$this->realPos->z > $this->endPos->z) {
             $this->realPos->z = $this->startPos->z;
-            if(--$this->realPos->x < $this->startPos->x){
+            if (--$this->realPos->x < $this->startPos->x) {
                 $this->realPos->x = $this->endPos->x;
-                if(++$this->realPos->y > $this->endPos->y){
+                if (++$this->realPos->y > $this->endPos->y) {
                     return true;
                 }
             }
@@ -96,12 +99,13 @@ class CopyBlockTask extends Task{
         return false;
     }
 
-    public function westPos() : bool{
-        if(--$this->realPos->x < $this->startPos->x){
+    public function westPos(): bool
+    {
+        if (--$this->realPos->x < $this->startPos->x) {
             $this->realPos->x = $this->endPos->x;
-            if(--$this->realPos->z < $this->startPos->z){
+            if (--$this->realPos->z < $this->startPos->z) {
                 $this->realPos->z = $this->endPos->z;
-                if(++$this->realPos->y > $this->endPos->y){
+                if (++$this->realPos->y > $this->endPos->y) {
                     return true;
                 }
             }
@@ -109,12 +113,13 @@ class CopyBlockTask extends Task{
         return false;
     }
 
-    public function northPos() : bool{
-        if(--$this->realPos->z < $this->startPos->z){
+    public function northPos(): bool
+    {
+        if (--$this->realPos->z < $this->startPos->z) {
             $this->realPos->z = $this->endPos->z;
-            if(++$this->realPos->x > $this->endPos->x){
+            if (++$this->realPos->x > $this->endPos->x) {
                 $this->realPos->x = $this->startPos->x;
-                if(++$this->realPos->y > $this->endPos->y){
+                if (++$this->realPos->y > $this->endPos->y) {
                     return true;
                 }
             }
@@ -122,27 +127,28 @@ class CopyBlockTask extends Task{
         return false;
     }
 
-    public function onRun() : void{
+    public function onRun(): void
+    {
         $count = 0;
         $worldEditor = WorldEditor::getInstance();
         $limit = $worldEditor->getBlockPerTick() * 3;
-        while(true){
-            if($count < $limit){
+        while (true) {
+            if ($count < $limit) {
                 $block = $this->world->getBlockAt($this->realPos->x, $this->realPos->y, $this->realPos->z);
-                if($block->getId() !== BlockLegacyIds::AIR){
+                if ($block->getTypeId() !== BlockTypeIds::AIR) {
                     ++$count;
                     $worldEditor->saveCopy($this->player, $block, $this->savePos);
                 }
 
-                if(++$this->savePos->x > $this->maxPos->x){
+                if (++$this->savePos->x > $this->maxPos->x) {
                     $this->savePos->x = 0;
-                    if(++$this->savePos->z > $this->maxPos->z){
+                    if (++$this->savePos->z > $this->maxPos->z) {
                         $this->savePos->z = 0;
                         ++$this->savePos->y;
                     }
                 }
 
-                switch($this->facing){
+                switch ($this->facing) {
                     case Facing::EAST:
                         $finish = $this->eastPos();
                         break;
@@ -160,16 +166,15 @@ class CopyBlockTask extends Task{
                         break;
                 }
 
-                if($finish){
-                    $this->player->sendMessage(TextFormat::AQUA . "[WorldEditor] 블럭 복사가 완료되었습니다");
+                if ($finish) {
+                    $this->player->sendMessage(WorldEditor::$prefix . "블럭 복사가 완료되었습니다");
                     break;
                 }
-            }else{
+            } else {
                 $this->setHandler(null);
                 $worldEditor->getScheduler()->scheduleDelayedTask($this, $worldEditor->getUpdateTick());
                 break;
             }
         }
     }
-
 }
